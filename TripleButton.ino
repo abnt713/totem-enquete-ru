@@ -1,4 +1,15 @@
 
+#include <SPI.h>
+#include <Ethernet.h>
+
+
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+
+char server[] = "192.168.0.2";
+IPAddress ip(192,168,0,177);
+
+EthernetClient client;
+
 /* Setting up the buttons */
 int buttonPin1 = 2;
 int buttonPin2 = 5;
@@ -32,9 +43,18 @@ void setup() {
   pinMode(buttonPin1, INPUT);
   pinMode(buttonPin2, INPUT);
   pinMode(buttonPin3, INPUT);
+  
+  Ethernet.begin(mac, ip);
+  delay(1000);
+  Serial.println("Ethernet...OK");
 }
 
 void loop(){
+  if (client.available()) {
+    char c = client.read();
+    Serial.print(c);
+  }
+  
   // read the state of the pushbutton value:
   checkAction();
   readButtonStates();
@@ -82,15 +102,22 @@ void checkAction(){
 }
 
 void sendAction(int button){
+  String data = "";
   switch(button){
     case DISLIKE_BUTTON:
-      Serial.println('D');
+//      Serial.println('D');
+    data+="like=0&card=0&comment=Generated_by_totem";
+    sendRequestForVote(data);
     break;
     case NEUTRAL_BUTTON:
-      Serial.println('N');
+//      Serial.println('N');
+    data+="like=2&card=0&comment=Generated_by_totem";
+    sendRequestForVote(data);
     break;
     case LIKE_BUTTON:
-      Serial.println('L');
+    data+="like=4&card=0&comment=Generated_by_totem";
+    sendRequestForVote(data);
+//      Serial.println('L');
     break;
   }
   
@@ -110,4 +137,43 @@ void blinkLed(){
   digitalWrite(ledPin, HIGH);
   delay(300);
   digitalWrite(ledPin, LOW);
+}
+
+void sendRequestForVote(String data){
+  if (!client.connected()) {
+    Serial.println();
+    Serial.println("disconnecting.");
+    client.stop();
+  }
+  
+  if (client.connect(server, 5000)) {
+    Serial.println("connected");
+    // Make a HTTP request:
+    client.println("POST /api/v1/enquetes/active HTTP/1.1");
+    client.println("Host: 192.168.0.2");
+    client.println("Content-Type: application/json");
+    client.println("Connection: close");
+    client.println();
+    
+    client.print("Content-Length: ");
+    client.println(data.length());
+    client.println();
+    client.print(data);
+    client.println();
+    
+    Serial.println("POST /api/v1/enquetes/active HTTP/1.1");
+    Serial.println("Host: 192.168.0.2");
+    Serial.println("Content-Type: application/x-www-form-urlencoded");
+    Serial.println("Connection: close");
+    Serial.print("Content-Length: ");
+    Serial.println(data.length());
+    Serial.println();
+    Serial.print(data);
+    Serial.println();
+    
+    Serial.println("Voted");
+  } 
+  else {
+    Serial.println("connection failed");
+  }
 }
