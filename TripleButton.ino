@@ -151,10 +151,8 @@ void sendRequestForVote(String data){
     // Make a HTTP request:
     client.println("POST /api/v1/enquetes/active HTTP/1.1");
     client.println("Host: 192.168.0.2");
-    client.println("Content-Type: application/json");
+    client.println("Content-Type: application/x-www-form-urlencoded");
     client.println("Connection: close");
-    client.println();
-    
     client.print("Content-Length: ");
     client.println(data.length());
     client.println();
